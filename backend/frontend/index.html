@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Predict Spam Message</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #e3f2fd 0%, #fff9c4 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(100, 181, 246, 0.2);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h1 {
+      color: #1976d2;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 28px;
+      font-weight: 600;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .input-group {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      color: #424242;
+      font-weight: 500;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #bbdefb;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: vertical;
+      transition: all 0.3s ease;
+      background: #f5f5f5;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #64b5f6;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(100, 181, 246, 0.1);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    button {
+      flex: 1;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .check-btn {
+      background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+    }
+
+    .check-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+    }
+
+    .check-btn:active {
+      transform: translateY(0);
+    }
+
+    .clear-btn {
+      background: linear-gradient(135deg, #fff59d 0%, #ffd54f 100%);
+      color: #424242;
+      box-shadow: 0 4px 15px rgba(255, 213, 79, 0.3);
+    }
+
+    .clear-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 213, 79, 0.4);
+    }
+
+    .clear-btn:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .result-box {
+      background: linear-gradient(135deg, #e3f2fd 0%, #fff9c4 50%, #e3f2fd 100%);
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 100px;
+      display: none;
+      animation: slideIn 0.4s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        max-height: 0;
+      }
+      to {
+        opacity: 1;
+        max-height: 500px;
+      }
+    }
+
+    .result-box.show {
+      display: block;
+    }
+
+    .result-header {
+      font-weight: 600;
+      color: #1976d2;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .result-content {
+      color: #424242;
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .prediction {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .prediction.spam {
+      background: linear-gradient(135deg, #ffccbc 0%, #ff8a65 100%);
+      color: #d84315;
+    }
+
+    .prediction.ham {
+      background: linear-gradient(135deg, #c8e6c9 0%, #81c784 100%);
+      color: #2e7d32;
+    }
+
+    .loading {
+      text-align: center;
+      color: #1976d2;
+      font-style: italic;
+    }
+
+    .error {
+      background: linear-gradient(135deg, #ffccbc 0%, #ff8a65 100%);
+      color: #d84315;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Predict Spam Message</h1>
+    
+    <div class="input-group">
+      <label for="text">กรุณาใส่ข้อความที่ต้องการตรวจสอบ:</label>
+      <textarea 
+        id="text" 
+        rows="6" 
+        placeholder="พิมพ์ข้อความที่คุณต้องการตรวจสอบว่าเป็น Spam หรือไม่..."
+      ></textarea>
+    </div>
+
+    <div class="button-group">
+      <button class="check-btn" onclick="checkSpam()">ตรวจสอบ</button>
+      <button class="clear-btn" onclick="clearAll()">ล้างข้อมูล</button>
+    </div>
+
+    <div id="result" class="result-box"></div>
+  </div>
+
+  <script>
+    async function checkSpam() {
+      const textElement = document.getElementById("text");
+      const resultElement = document.getElementById("result");
+      const text = textElement.value.trim();
+
+      if (!text) {
+        resultElement.innerHTML = '<p class="error">⚠️ กรุณาใส่ข้อความก่อนตรวจสอบ</p>';
+        resultElement.classList.add('show');
+        return;
+      }
+
+      // Show loading
+      resultElement.innerHTML = '<p class="loading">🔍 กำลังตรวจสอบ...</p>';
+      resultElement.classList.add('show');
+
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+
+        if (!res.ok) {
+          throw new Error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+        }
+
+        const data = await res.json();
+        
+        // Display result with beautiful formatting
+        const isSpam = data.prediction === 'spam' || data.prediction === 1;
+        const predictionClass = isSpam ? 'spam' : 'ham';
+        const predictionText = isSpam ? '🚫 Spam' : '✅ ไม่ใช่ Spam';
+        
+        // Get probabilities from API response
+        const spamProb = data.spam_probability ? (data.spam_probability * 100).toFixed(2) : '0.00';
+        const hamProb = data.ham_probability ? (data.ham_probability * 100).toFixed(2) : '0.00';
+
+        resultElement.innerHTML = `
+          <div class="result-header">📊 ผลการตรวจสอบ</div>
+          <div class="result-content">
+            <div class="prediction ${predictionClass}">
+              ${predictionText}
+            </div>
+            <p style="margin-top: 15px;">
+              <strong>🚫 โอกาสที่เป็น Spam:</strong> ${spamProb}%
+            </p>
+            <p style="margin-top: 8px;">
+              <strong>✅ โอกาสที่ไม่เป็น Spam:</strong> ${hamProb}%
+            </p>
+            <p style="margin-top: 10px; font-size: 13px; color: #757575;">
+              ${isSpam ? 
+                '⚠️ ข้อความนี้อาจเป็น Spam กรุณาระวังและตรวจสอบความถูกต้อง' 
+                : ''}
+            </p>
+          </div>
+        `;
+      } catch (error) {
+        resultElement.innerHTML = `
+          <p class="error">
+            ❌ เกิดข้อผิดพลาด: ${error.message}<br>
+            กรุณาลองใหม่อีกครั้ง
+          </p>
+        `;
+      }
+    }
+
+    function clearAll() {
+      document.getElementById("text").value = '';
+      const resultElement = document.getElementById("result");
+      resultElement.classList.remove('show');
+      resultElement.innerHTML = '';
+      document.getElementById("text").focus();
+    }
+
+    // Enter key to submit
+    document.getElementById("text").addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.key === 'Enter') {
+        checkSpam();
+      }
+    });
+  </script>
+</body>
+</html>
